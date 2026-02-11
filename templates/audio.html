@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Learning - {{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>{{ app_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/">Home</a></li>
+                <li class="nav-item"><a href="/text">Text</a></li>
+                <li class="nav-item"><a href="/code">Code</a></li>
+                <li class="nav-item"><a href="/audio" class="active">Audio</a></li>
+                <li class="nav-item"><a href="/images">Images</a></li>
+                <li class="nav-item"><a href="/about">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Main Content -->
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-headphones"></i>
+                <h1 class="card-title">Audio Learning</h1>
+            </div>
+            <p style="color: var(--gray-color); margin-bottom: 2rem;">Listen to AI-generated audio explanations - perfect for learning on the go!</p>
+            
+            <!-- Input Form -->
+            <form id="audioForm">
+                <div class="form-group">
+                    <label class="form-label" for="topic">Enter ML Topic</label>
+                    <input type="text" id="topic" name="topic" class="form-control" 
+                           placeholder="e.g., decision trees, neural networks, SVM" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="length">Audio Length</label>
+                    <select id="length" name="length" class="form-control">
+                        <option value="Brief" selected>Brief (1 minute)</option>
+                        <option value="Detailed">Detailed (3 minutes)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-magic"></i>
+                    Generate Audio Lesson
+                </button>
+            </form>
+
+            <!-- Results Section -->
+            <div id="resultContainer" style="display: none;">
+                <hr style="margin: 2rem 0; border: none; border-top: 2px solid #e0e0e0;">
+                
+                <!-- Audio Player -->
+                <div style="margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Audio Player</h2>
+                    <div id="audioPlayerContainer" class="audio-player">
+                        <!-- Audio player will be inserted here -->
+                    </div>
+                    <button id="downloadAudioBtn" class="btn btn-outline" style="margin-top: 1rem;">
+                        <i class="fas fa-download"></i>
+                        Download MP3
+                    </button>
+                </div>
+                
+                <!-- Script -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">Audio Script</h2>
+                    <button id="copyScriptBtn" class="btn btn-outline">
+                        <i class="fas fa-copy"></i>
+                        Copy Script
+                    </button>
+                </div>
+                
+                <div id="scriptContent" class="content-box">
+                    <!-- Script will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('audioForm');
+            const resultContainer = document.getElementById('resultContainer');
+            const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+            const scriptContent = document.getElementById('scriptContent');
+            const downloadAudioBtn = document.getElementById('downloadAudioBtn');
+            const copyScriptBtn = document.getElementById('copyScriptBtn');
+            
+            let currentScript = '';
+            let currentAudioUrl = '';
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const topic = document.getElementById('topic').value.trim();
+                const length = document.getElementById('length').value;
+                
+                if (!topic) {
+                    showToast('Please enter a topic', 'error');
+                    return;
+                }
+                
+                showLoading(true);
+                
+                try {
+                    const response = await fetch('/api/generate/audio', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            topic: topic,
+                            length: length
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        currentScript = data.script;
+                        scriptContent.innerHTML = formatMarkdown(data.script);
+                        
+                        if (data.audio && data.audio.success) {
+                            currentAudioUrl = data.audio.url;
+                            audioPlayerContainer.innerHTML = `
+                                <audio controls style="width: 100%;">
+                                    <source src="${data.audio.url}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            `;
+                        }
+                        
+                        resultContainer.style.display = 'block';
+                        showToast('Audio lesson generated successfully!', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to generate audio', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('An error occurred while generating audio', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            downloadAudioBtn.addEventListener('click', function() {
+                if (currentAudioUrl) {
+                    const link = document.createElement('a');
+                    link.href = currentAudioUrl;
+                    link.download = currentAudioUrl.split('/').pop();
+                    link.click();
+                    showToast('Download started!', 'success');
+                }
+            });
+            
+            copyScriptBtn.addEventListener('click', function() {
+                copyToClipboard(currentScript);
+                showToast('Script copied to clipboard!', 'success');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Learning - {{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>{{ app_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/">Home</a></li>
+                <li class="nav-item"><a href="/text">Text</a></li>
+                <li class="nav-item"><a href="/code">Code</a></li>
+                <li class="nav-item"><a href="/audio">Audio</a></li>
+                <li class="nav-item"><a href="/images" class="active">Images</a></li>
+                <li class="nav-item"><a href="/about">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Main Content -->
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-image"></i>
+                <h1 class="card-title">Visual Learning</h1>
+            </div>
+            <p style="color: var(--gray-color); margin-bottom: 2rem;">Generate educational diagrams and visualizations for ML concepts</p>
+            
+            <!-- Input Form -->
+            <form id="imageForm">
+                <div class="form-group">
+                    <label class="form-label" for="concept">Enter ML Concept</label>
+                    <input type="text" id="concept" name="concept" class="form-control" 
+                           placeholder="e.g., convolutional neural network, transformer architecture, LSTM gates" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-magic"></i>
+                    Generate Visualizations
+                </button>
+            </form>
+
+            <!-- Results Section -->
+            <div id="resultContainer" style="display: none;">
+                <hr style="margin: 2rem 0; border: none; border-top: 2px solid #e0e0e0;">
+                
+                <!-- Generated Prompts -->
+                <div style="margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem;">Generated Image Prompts</h2>
+                    <div id="promptsList" class="content-box">
+                        <!-- Prompts will be inserted here -->
+                    </div>
+                </div>
+                
+                <!-- Image Gallery -->
+<div id="imageGallery" class="image-gallery">
+    <!-- Images will be inserted here -->
+</div>
+
+<script>
+// Update the display images function
+function displayImages(images) {
+    const gallery = document.getElementById('imageGallery');
+    gallery.innerHTML = '';
+    
+    images.forEach((image, index) => {
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        
+        if (image.success && image.url) {
+            // REAL IMAGE
+            card.innerHTML = `
+                <img src="${image.url}" alt="Generated diagram ${index + 1}" style="width: 100%; height: 200px; object-fit: contain; background: #f5f5f5;">
+                <div class="image-card-body">
+                    <h3>Visualization ${index + 1}</h3>
+                    <p style="font-size: 0.8rem; color: #666;">${image.prompt?.substring(0, 100)}...</p>
+                    <a href="${image.url}" download class="btn btn-outline" style="width: 100%;">
+                        <i class="fas fa-download"></i> Download PNG
+                    </a>
+                </div>
+            `;
+        } else {
+            // PLACEHOLDER
+            card.innerHTML = `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px; display: flex; align-items: center; justify-content: center; color: white; text-align: center; padding: 1rem;">
+                    <div>
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <p>Image generation failed</p>
+                        <small>${image.error || 'Check Stability AI key'}</small>
+                    </div>
+                </div>
+                <div class="image-card-body">
+                    <h3>Visualization ${index + 1}</h3>
+                    <p style="color: var(--gray-color);">Placeholder - Add Stability API key</p>
+                </div>
+            `;
+        }
+        
+        gallery.appendChild(card);
+    });
+}
+</script>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('imageForm');
+            const resultContainer = document.getElementById('resultContainer');
+            const promptsList = document.getElementById('promptsList');
+            const imageGallery = document.getElementById('imageGallery');
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const concept = document.getElementById('concept').value.trim();
+                
+                if (!concept) {
+                    showToast('Please enter a concept', 'error');
+                    return;
+                }
+                
+                showLoading(true);
+                
+                try {
+                    const response = await fetch('/api/generate/images', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            concept: concept
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Display prompts
+                        promptsList.innerHTML = '<ul style="margin-left: 1.5rem;">';
+                        data.prompts.forEach(prompt => {
+                            promptsList.innerHTML += `<li style="margin-bottom: 0.5rem;">${prompt}</li>`;
+                        });
+                        promptsList.innerHTML += '</ul>';
+                        
+                        // Display images
+                        imageGallery.innerHTML = '';
+                        data.images.forEach((image, index) => {
+                            const imageCard = document.createElement('div');
+                            imageCard.className = 'image-card';
+                            
+                            if (image.is_placeholder) {
+                                imageCard.innerHTML = `
+                                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px; display: flex; align-items: center; justify-content: center; color: white; text-align: center; padding: 1rem;">
+                                        <div>
+                                            <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                            <p>${image.content.split('\n')[1] || 'Educational Diagram'}</p>
+                                        </div>
+                                    </div>
+                                    <div class="image-card-body">
+                                        <h3 style="font-weight: 600; margin-bottom: 0.5rem;">Visualization ${index + 1}</h3>
+                                        <p style="color: var(--gray-color); font-size: 0.9rem;">${new Date().toLocaleDateString()}</p>
+                                    </div>
+                                `;
+                            } else {
+                                imageCard.innerHTML = `
+                                    <img src="${image.url}" alt="Generated visualization ${index + 1}">
+                                    <div class="image-card-body">
+                                        <h3 style="font-weight: 600; margin-bottom: 0.5rem;">Visualization ${index + 1}</h3>
+                                        <a href="${image.url}" download class="btn btn-outline" style="width: 100%;">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                `;
+                            }
+                            
+                            imageGallery.appendChild(imageCard);
+                        });
+                        
+                        resultContainer.style.display = 'block';
+                        showToast('Visualizations generated successfully!', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to generate visualizations', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('An error occurred while generating visualizations', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Generation - {{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>{{ app_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/">Home</a></li>
+                <li class="nav-item"><a href="/text">Text</a></li>
+                <li class="nav-item"><a href="/code" class="active">Code</a></li>
+                <li class="nav-item"><a href="/audio">Audio</a></li>
+                <li class="nav-item"><a href="/images">Images</a></li>
+                <li class="nav-item"><a href="/about">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Main Content -->
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-code"></i>
+                <h1 class="card-title">Code Generation</h1>
+            </div>
+            <p style="color: var(--gray-color); margin-bottom: 2rem;">Generate production-ready Python code for ML algorithms</p>
+            
+            <!-- Input Form -->
+            <form id="codeForm">
+                <div class="form-group">
+                    <label class="form-label" for="algorithm">Enter ML Algorithm/Concept</label>
+                    <input type="text" id="algorithm" name="algorithm" class="form-control" 
+                           placeholder="e.g., k-means clustering, neural network from scratch, LSTM" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="complexity">Implementation Complexity</label>
+                    <select id="complexity" name="complexity" class="form-control">
+                        <option value="Basic">Basic (Simple implementation)</option>
+                        <option value="Detailed" selected>Detailed (With comments)</option>
+                        <option value="Production">Production-ready (With error handling)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-magic"></i>
+                    Generate Code
+                </button>
+            </form>
+
+            <!-- Results Section -->
+            <div id="resultContainer" style="display: none;">
+                <hr style="margin: 2rem 0; border: none; border-top: 2px solid #e0e0e0;">
+                
+                <!-- Dependencies -->
+                <div id="dependenciesSection" style="margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">
+                        <i class="fas fa-cube"></i> Required Dependencies
+                    </h3>
+                    <div id="dependenciesList" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <!-- Dependencies will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Colab Link -->
+                <div id="colabSection" style="margin-bottom: 1.5rem;">
+                    <a id="colabLink" href="#" target="_blank" class="btn btn-success">
+                        <i class="fab fa-google"></i>
+                        Open in Google Colab
+                    </a>
+                </div>
+                
+                <!-- Code Display -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">Generated Code</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="copyBtn" class="btn btn-outline">
+                            <i class="fas fa-copy"></i>
+                            Copy
+                        </button>
+                        <button id="downloadBtn" class="btn btn-outline">
+                            <i class="fas fa-download"></i>
+                            Download .py
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="code-container">
+                    <div class="code-header">
+                        <span><i class="fab fa-python"></i> Python</span>
+                        <span class="code-actions">
+                            <button onclick="copyToClipboard(document.getElementById('codeContent').textContent)" style="background: none; border: none; color: white; cursor: pointer;">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </span>
+                    </div>
+                    <pre id="codeContent" class="code-content"><code><!-- Code will be inserted here --></code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('codeForm');
+            const resultContainer = document.getElementById('resultContainer');
+            const codeContent = document.getElementById('codeContent');
+            const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const dependenciesList = document.getElementById('dependenciesList');
+            const colabLink = document.getElementById('colabLink');
+            
+            let currentCode = '';
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const algorithm = document.getElementById('algorithm').value.trim();
+                const complexity = document.getElementById('complexity').value;
+                
+                if (!algorithm) {
+                    showToast('Please enter an algorithm or concept', 'error');
+                    return;
+                }
+                
+                showLoading(true);
+                
+                try {
+                    const response = await fetch('/api/generate/code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            algorithm: algorithm,
+                            complexity: complexity
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        currentCode = data.code;
+                        codeContent.innerHTML = `<code>${escapeHtml(data.code)}</code>`;
+                        
+                        // Display dependencies
+                        if (data.file_info && data.file_info.dependencies) {
+                            dependenciesList.innerHTML = '';
+                            data.file_info.dependencies.forEach(dep => {
+                                const badge = document.createElement('span');
+                                badge.style.cssText = 'background: #e3f2fd; color: #1976d2; padding: 0.25rem 1rem; border-radius: 20px; font-size: 0.85rem;';
+                                badge.innerHTML = `<i class="fas fa-check-circle"></i> ${dep}`;
+                                dependenciesList.appendChild(badge);
+                            });
+                        }
+                        
+                        // Set Colab link
+                        if (data.colab_info) {
+                            colabLink.href = data.colab_info.colab_url;
+                        }
+                        
+                        resultContainer.style.display = 'block';
+                        showToast('Code generated successfully!', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to generate code', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('An error occurred while generating code', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            copyBtn.addEventListener('click', function() {
+                copyToClipboard(currentCode);
+                showToast('Code copied to clipboard!', 'success');
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                const algorithm = document.getElementById('algorithm').value.trim();
+                const filename = `${algorithm.replace(/\s+/g, '_')}.py`;
+                downloadTextFile(currentCode, filename);
+                showToast('File downloaded!', 'success');
+            });
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

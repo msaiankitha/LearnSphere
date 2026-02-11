@@ -1,0 +1,10 @@
+Flask==3.0.0
+python-dotenv==1.0.0
+google-generativeai==0.3.2      # Keep but won't be used
+openai==1.12.0                  # ✅ ADD THIS
+gTTS==2.4.0
+Pillow==10.1.0
+requests==2.31.0
+markdown==3.5.1
+pygments==2.17.2
+werkzeug==3.0.1

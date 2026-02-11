@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>GyanGuru - AI-Powered ML Learning Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>{{ app_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/" class="active"><i class="fas fa-home"></i> Home</a></li>
+                <li class="nav-item"><a href="/text"><i class="fas fa-file-alt"></i> Text</a></li>
+                <li class="nav-item"><a href="/code"><i class="fas fa-code"></i> Code</a></li>
+                <li class="nav-item"><a href="/audio"><i class="fas fa-headphones"></i> Audio</a></li>
+                <li class="nav-item"><a href="/images"><i class="fas fa-image"></i> Images</a></li>
+                <li class="nav-item"><a href="/about"><i class="fas fa-info-circle"></i> About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="container">
+            <h1>Welcome to {{ app_name }}</h1>
+            <p>Your AI-Powered Machine Learning Learning Assistant</p>
+            <p style="margin-top: 1rem; font-size: 1.1rem;">Learn ML concepts through text, code, audio, and visual explanations</p>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="container">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; padding: 2rem 0;">
+            
+            <!-- Text Explanation Card -->
+            <div class="card" style="text-align: center;">
+                <div class="card-header" style="justify-content: center;">
+                    <i class="fas fa-file-alt" style="font-size: 2.5rem;"></i>
+                    <h2 class="card-title">Text Explanations</h2>
+                </div>
+                <p style="margin-bottom: 1.5rem;">Get comprehensive, structured explanations of any ML concept with learning objectives and examples.</p>
+                <a href="/text" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    Try Now
+                </a>
+            </div>
+
+            <!-- Code Generation Card -->
+            <div class="card" style="text-align: center;">
+                <div class="card-header" style="justify-content: center;">
+                    <i class="fas fa-code" style="font-size: 2.5rem;"></i>
+                    <h2 class="card-title">Code Generation</h2>
+                </div>
+                <p style="margin-bottom: 1.5rem;">Generate production-ready Python code with automatic dependency detection and Colab support.</p>
+                <a href="/code" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    Try Now
+                </a>
+            </div>
+
+            <!-- Audio Learning Card -->
+            <div class="card" style="text-align: center;">
+                <div class="card-header" style="justify-content: center;">
+                    <i class="fas fa-headphones" style="font-size: 2.5rem;"></i>
+                    <h2 class="card-title">Audio Lessons</h2>
+                </div>
+                <p style="margin-bottom: 1.5rem;">Listen to AI-generated audio explanations perfect for learning on the go.</p>
+                <a href="/audio" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    Try Now
+                </a>
+            </div>
+
+            <!-- Visual Learning Card -->
+            <div class="card" style="text-align: center;">
+                <div class="card-header" style="justify-content: center;">
+                    <i class="fas fa-image" style="font-size: 2.5rem;"></i>
+                    <h2 class="card-title">Visual Diagrams</h2>
+                </div>
+                <p style="margin-bottom: 1.5rem;">Generate educational diagrams and visualizations to understand complex concepts.</p>
+                <a href="/images" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    Try Now
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Explanation - {{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-graduation-cap"></i>
+                <span>{{ app_name }}</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/">Home</a></li>
+                <li class="nav-item"><a href="/text" class="active">Text</a></li>
+                <li class="nav-item"><a href="/code">Code</a></li>
+                <li class="nav-item"><a href="/audio">Audio</a></li>
+                <li class="nav-item"><a href="/images">Images</a></li>
+                <li class="nav-item"><a href="/about">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Main Content -->
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file-alt"></i>
+                <h1 class="card-title">Text Explanation</h1>
+            </div>
+            <p style="color: var(--gray-color); margin-bottom: 2rem;">Get comprehensive text-based explanations of any Machine Learning topic</p>
+            
+            <!-- Input Form -->
+            <form id="textForm">
+                <div class="form-group">
+                    <label class="form-label" for="topic">Enter ML Topic</label>
+                    <input type="text" id="topic" name="topic" class="form-control" 
+                           placeholder="e.g., neural network backpropagation, decision trees, SVM" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="complexity">Explanation Depth</label>
+                    <select id="complexity" name="complexity" class="form-control">
+                        <option value="Brief">Brief (2-3 paragraphs)</option>
+                        <option value="Detailed" selected>Detailed (with examples)</option>
+                        <option value="Comprehensive">Comprehensive (full guide)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-magic"></i>
+                    Generate Explanation
+                </button>
+            </form>
+
+            <!-- Results Section -->
+            <div id="resultContainer" style="display: none;">
+                <hr style="margin: 2rem 0; border: none; border-top: 2px solid #e0e0e0;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: 600;">Your Explanation</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="copyBtn" class="btn btn-outline">
+                            <i class="fas fa-copy"></i>
+                            Copy
+                        </button>
+                        <button id="downloadBtn" class="btn btn-outline">
+                            <i class="fas fa-download"></i>
+                            Download
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="explanationContent" class="content-box markdown-content">
+                    <!-- Explanation will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('textForm');
+            const resultContainer = document.getElementById('resultContainer');
+            const explanationContent = document.getElementById('explanationContent');
+            const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            let currentExplanation = '';
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const topic = document.getElementById('topic').value.trim();
+                const complexity = document.getElementById('complexity').value;
+                
+                if (!topic) {
+                    showToast('Please enter a topic', 'error');
+                    return;
+                }
+                
+                showLoading(true);
+                
+                try {
+                    const response = await fetch('/api/generate/text', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            topic: topic,
+                            complexity: complexity
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        currentExplanation = data.explanation;
+                        explanationContent.innerHTML = formatMarkdown(data.explanation);
+                        resultContainer.style.display = 'block';
+                        showToast('Explanation generated successfully!', 'success');
+                    } else {
+                        showToast(data.error || 'Failed to generate explanation', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('An error occurred while generating the explanation', 'error');
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            copyBtn.addEventListener('click', function() {
+                copyToClipboard(currentExplanation);
+                showToast('Copied to clipboard!', 'success');
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                const topic = document.getElementById('topic').value.trim();
+                const filename = `${topic.replace(/\s+/g, '_')}_explanation.txt`;
+                downloadTextFile(currentExplanation, filename);
+                showToast('File downloaded!', 'success');
+            });
+        });
+    </script>
+</body>
+</html>
